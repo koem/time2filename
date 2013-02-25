@@ -16,8 +16,8 @@ use constant TRUE  => 1;
 
 # no arguments given? print help and exit
 if ($#ARGV == -1) {
-	print_help();
-	exit(1);
+    print_help();
+    exit(1);
 }
 
 # variables for storing command line arguments
@@ -28,44 +28,44 @@ my $adjust = 0;
 
 for my $fromfile (@ARGV) {
 
-	# check for arguments
-	if ($dontcheckarguments == FALSE) {
-		if ($fromfile eq "-h") {
-			print_help();
-			next;
-		} elsif ($fromfile eq "-v") {
-			$verbose = TRUE;
-			next;
-		} elsif ($fromfile eq "-p") {
-			$pretend = TRUE;
-			$verbose = TRUE;
-			next;
-		} elsif ($fromfile =~ /^-a-?\d*/) {
+    # check for arguments
+    if ($dontcheckarguments == FALSE) {
+        if ($fromfile eq "-h") {
+            print_help();
+            next;
+        } elsif ($fromfile eq "-v") {
+            $verbose = TRUE;
+            next;
+        } elsif ($fromfile eq "-p") {
+            $pretend = TRUE;
+            $verbose = TRUE;
+            next;
+        } elsif ($fromfile =~ /^-a-?\d*/) {
             $adjust = substr($fromfile, 2);
-			next;
-		} elsif ($fromfile eq "--") {
-			$dontcheckarguments = TRUE;
-			next;
-		}
-	}
+            next;
+        } elsif ($fromfile eq "--") {
+            $dontcheckarguments = TRUE;
+            next;
+        }
+    }
 
-	# get exif creation timestamp of file
-	my $info = ImageInfo($fromfile);
-	my $estamp = $info->{"DateTimeOriginal"};
+    # get exif creation timestamp of file
+    my $info = ImageInfo($fromfile);
+    my $estamp = $info->{"DateTimeOriginal"};
     my $esecs; # seconds since epoch
 
-	# if no timestamp in file -> use mod-time of file
-	if (length($estamp) != 19) {
+    # if no timestamp in file -> use mod-time of file
+    if (length($estamp) != 19) {
         print "No EXIF Timestamp. Using modification time: $fromfile\n";
         $esecs = stat($fromfile)->mtime;
-	} else {
+    } else {
         $esecs = str2time($estamp);
     }
 
     # eventually adjust time
     $esecs += $adjust;
 
-	# prepare timestamp
+    # prepare timestamp
     my $timestamp = sprintf "%4d-%02d-%02d %02d-%02d-%02d", 
             localtime($esecs)->year+1900, 
             localtime($esecs)->mon+1, 
@@ -73,72 +73,76 @@ for my $fromfile (@ARGV) {
             localtime($esecs)->hour, 
             localtime($esecs)->min, 
             localtime($esecs)->sec;
-	$timestamp =~ s/:/-/g;
+    $timestamp =~ s/:/-/g;
 
-	# cut fromfile in file's name and dir name
-        $filename = basename($fromfile);
-        $dirname  = dirname($fromfile);
+    # cut fromfile in file's name and dir name
+    $filename = basename($fromfile);
+    $dirname  = dirname($fromfile);
 
-	# strip existing timestamp from beginning of fromfile
-	# (formats checked are: NNNN.NN.NN and NNNN.NN.NN.NN.NN.NN
-	#  where N is a digit and . is no digit)
-	$newname = $filename;
-	$newname =~ s/^[0-9]{4}([^0-9][0-9]{2}){2}(([^0-9][0-9]{2}){3})?//;
+    # strip existing timestamp from beginning of fromfile
+    # (formats checked are: NNNN.NN.NN and NNNN.NN.NN.NN.NN.NN
+    #  where N is a digit and . is no digit)
+    $newname = $filename;
+    $newname =~ s/^[0-9]{4}([^0-9][0-9]{2}){2}(([^0-9][0-9]{2}){3})?//;
 
-	# strip delimiter characters (-_ ) from beginning of fromfile
-	$newname =~ s/^(-|_| )*//;
+    # strip delimiter characters (-_ ) from beginning of fromfile
+    $newname =~ s/^(-|_| )*//;
 
-	# check if the new name would be the same as the old name
-	if ($filename eq "$timestamp $newname") {
-		if ($verbose == TRUE) {
-			print "name is OK, doing nothing: $fromfile\n";
-		}
-		next;
-	}
+    # check if the new name would be the same as the old name
+    if ($filename eq "$timestamp $newname") {
+        if ($verbose == TRUE) {
+            print "name is OK, doing nothing: $fromfile\n";
+        }
+        next;
+    }
 
-	# rename the file
+    # rename the file
 
-	# counter for adding a number, if the file name already exists
-	$try = 0;
-	while (1) {
+    # counter for adding a number, if the file name already exists
+    $try = 0;
+    while (1) {
 
-		# build target fromfile
-		if ($try == 0) {
-			$filenumber = "";
-		} else {
-			$filenumber = "-" . $try;
-		}
-		$tofile = "$dirname/$timestamp$filenumber $newname";
+        # build target fromfile
+        if ($try == 0) {
+            $filenumber = "";
+        } else {
+            $filenumber = "-" . $try;
+        }
+        $tofile = "$dirname/$timestamp$filenumber $newname";
 
-		# test if file already exists
-		if (-e "$tofile") { 
-  			# increase number and do the loop again
-			$try = $try + 1;
-			next;
-		}
+        # test if file already exists
+        if (-e "$tofile") { 
+            # increase number and do the loop again
+            $try = $try + 1;
+            next;
+        }
 
-		# move file
-		if ($verbose == TRUE) {
-			if ($pretend == TRUE) {
-				print "not ";
-			}
-			print "renaming '$fromfile' to '$tofile'\n";
-		}
-		if ($pretend == FALSE) {
-			move($fromfile, $tofile);
-		}
-		last;
-	}
+        # move file
+        if ($verbose == TRUE) {
+            if ($pretend == TRUE) {
+                print "not ";
+            }
+            print "renaming '$fromfile' to '$tofile'\n";
+        }
+        if ($pretend == FALSE) {
+            move($fromfile, $tofile);
+        }
+        last;
+    }
 }
 
 sub print_help {
-	print "command line arguments:\n";
-	print "  -p      pretend to rename files (implies -v)\n";
+    print "time2filename.pl will add prepend a files name with a timestamp.\n";
+    print "If present it will use the EXIF-Timestamp included in the file.\n";
+    print "If not it will use the files modification time.\n";
+    print "\n";
+    print "command line arguments:\n";
+    print "  -p      just pretend to rename files, do nothing (implies -v)\n";
     print "  -a<sec> adjust time by <sec> seconds. can be negative\n";
-	print "  -v      be verbose\n";
-	print "  --      stop arguments scanning (for files named -v or the like)\n";
-	print "  -h      print this help\n";
-	print "\n";
-	print "  hint: to recurse into subdirectories use\n";
-	print "    find <pathname ...> -exec time2filename.pl -v {} \\;\n";
+    print "  -v      be verbose\n";
+    print "  --      stop arguments scanning (for files named -v or the like)\n";
+    print "  -h      print this help\n";
+    print "\n";
+    print "hint: to recurse into subdirectories use\n";
+    print "  find <pathname ...> -exec time2filename.pl -p {} \\;\n";
 }
