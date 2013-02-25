@@ -1,4 +1,4 @@
-time2filename
+perl script to add timestamps to files (JPG, MOV, ...)
 
 todo:
  - when using -a and a timestamp is already in the filename: use it instead of modification time
